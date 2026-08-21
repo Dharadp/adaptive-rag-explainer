@@ -55,5 +55,5 @@ This project was built as a hands-on way to learn Retrieval-Augmented Generation
 
 ## Live demo
 
-- Frontend: [your Netlify URL]
-- Backend API: [your Render URL]
+- Frontend: [[EXPLAIN IT TO ME | Frontend](https://adaptive-rag-explainer.netlify.app/)] 
+- Backend API: [[EXPLAIN IT TO ME | Backend](https://adaptive-rag-explainer.onrender.com)]
