@@ -1,8 +1,6 @@
 # Python
 backend/__pycache__/
 backend/.env
-backend/*.embeddings.json
-backend/knowledge/*.embeddings.json
 backend/venv/
 
 # Node/React
