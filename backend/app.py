@@ -136,7 +136,11 @@ def ensure_knowledge_file(path: str, default_content: str):
 def retrieve_top_chunks(topic: str, domain:str, top_k: int = 3) -> list[str]:
     print(f"Retrieving top {top_k} chunks for topic: {topic}")
     data = load_domain(domain)
-    topic_embedding = embed_texts([topic])[0]
+    try:
+        topic_embedding = embed_texts([topic])[0]
+    except Exception as e:
+        print(f"Query embedding failed: {e}")
+        return []  # no context available, caller (generate_stream) handles this gracefully
     scores = [cosine_similarity(topic_embedding, emb) for emb in data["embeddings"]]
     ranked = sorted(zip(scores, data["chunks"]), key=lambda x: x[0], reverse=True)
     return [chunk for score, chunk in ranked[:top_k]]
