@@ -10,6 +10,7 @@ from google import genai
 from google.genai.errors import ServerError, ClientError
 import numpy as np
 from groq import AsyncGroq
+from fastembed import TextEmbedding
 
 app = FastAPI()
 
@@ -61,13 +62,11 @@ def load_domain(domain: str):
         with open(cache_path, "r", encoding="utf-8") as f:
             cached = json.load(f)
         if cached.get("hash") == current_hash:
-            print(f"{domain}: loaded embeddings from cache (no API calls)")
             domain_cache[domain] = {"chunks": cached["chunks"], "embeddings": cached["embeddings"]}
             return domain_cache[domain]
 
     # No valid cache — compute fresh and save it
     chunks = load_chunks(filepath)
-    print(f"{domain}: embedding {len(chunks)} chunks (fresh)")
     embeddings = embed_texts(chunks)
 
     with open(cache_path, "w", encoding="utf-8") as f:
@@ -78,13 +77,10 @@ def load_domain(domain: str):
 
 # ---------- RAG setup: load, chunk, embed once at startup ----------
 def load_chunks(filepath: str, chunk_size: int = 500) -> list[str]:
-    print(f"Loading and chunking knowledge from {filepath}...")
     with open(filepath, "r", encoding="utf-8") as f:
         text = f.read()
     sentences = text.split(". ")
     chunks, current = [], ""
-    print(f"Chunking into pieces of ~{chunk_size} characters...")
-    print(f"Total sentences: {len(sentences)}")
     for sentence in sentences:
         if len(current) + len(sentence) < chunk_size:
             current += sentence + ". "
@@ -95,33 +91,17 @@ def load_chunks(filepath: str, chunk_size: int = 500) -> list[str]:
         chunks.append(current.strip())
     return chunks
 
-def embed_texts(texts: list[str], batch_size: int = 100) -> list[list[float]]:
-    all_embeddings = []
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i:i + batch_size]
-        try:
-            result = client.models.embed_content(model="gemini-embedding-001", contents=batch)
-            all_embeddings.extend([e.values for e in result.embeddings])
-        except (ServerError, ClientError) as e:
-            print(f"Embedding failed for batch {i}-{i+len(batch)}: {e}")
-            raise
-    return all_embeddings
+def get_embedding_model():
+    global _embedding_model
+    if _embedding_model is None:
+        _embedding_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+    return _embedding_model
 
-# used to use sentence-transformers for embeddings, but now we use Gemini embeddings instead
-# def get_embedding_model():
-#     global _embedding_model
-#     if _embedding_model is None:
-#         from sentence_transformers import SentenceTransformer
-#         _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-#     return _embedding_model
-
-# def embed_texts(texts: list[str]) -> list[list[float]]:
-#     model = get_embedding_model()
-#     embeddings = model.encode(texts, convert_to_numpy=True)
-#     return embeddings.tolist()
+def embed_texts(texts: list[str]) -> list[list[float]]:
+    model = get_embedding_model()
+    return [vec.tolist() for vec in model.embed(texts)]
 
 def cosine_similarity(a, b):
-    print(f"Calculating cosine similarity between vectors of length {len(a)} and {len(b)}")
     a, b = np.array(a), np.array(b)
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
@@ -131,15 +111,12 @@ def ensure_knowledge_file(path: str, default_content: str):
             f.write(default_content)
         # ensure read + write permission for the owner (and read for others)
         os.chmod(path, os.stat.S_IRUSR | os.stat.S_IWUSR | os.stat.S_IRGRP | os.stat.S_IROTH)
-        print(f"knowledge.txt not found — created a default one at {path}")
 
 def retrieve_top_chunks(topic: str, domain:str, top_k: int = 3) -> list[str]:
-    print(f"Retrieving top {top_k} chunks for topic: {topic}")
     data = load_domain(domain)
     try:
         topic_embedding = embed_texts([topic])[0]
     except Exception as e:
-        print(f"Query embedding failed: {e}")
         return []  # no context available, caller (generate_stream) handles this gracefully
     scores = [cosine_similarity(topic_embedding, emb) for emb in data["embeddings"]]
     ranked = sorted(zip(scores, data["chunks"]), key=lambda x: x[0], reverse=True)
@@ -147,7 +124,6 @@ def retrieve_top_chunks(topic: str, domain:str, top_k: int = 3) -> list[str]:
 
 # ---------- Prompt builder: RAG context + age tuning ----------
 def build_prompt(topic: str, age_group: str, retrieved_chunks: list[str]) -> str:
-    print(f"Building prompt for topic '{topic}' and age group '{age_group}' with {len(retrieved_chunks)} retrieved chunks.")
     profile = AGE_PROFILES.get(age_group, AGE_PROFILES["adult"])
     context = "\n\n".join(retrieved_chunks)
     return f"""Explain the topic below to {profile}
@@ -170,7 +146,6 @@ async def generate_stream(req: QuestionRequest):
     try:
         retrieved_chunks = retrieve_top_chunks(req.question, req.domain)
     except Exception as e:
-        print(f"Retrieval failed: {e}")
         retrieved_chunks = []
         raise e  # re-raise to let the client know retrieval failed
 
@@ -193,7 +168,6 @@ Topic: {req.question}"""
                         yield chunk.text
                 return  # success — stop here, don't try the next model
             except (ServerError, ClientError) as e:
-                print(f"{model_name} failed: {e}")
                 continue
         # All Gemini models failed — fall back to Groq
         try:
@@ -202,7 +176,6 @@ Topic: {req.question}"""
                 messages=[{"role": "user", "content": prompt}],
                 stream=True,
             )
-            print(f"stream: {stream}")
             async for chunk in stream:
                 content = chunk.choices[0].delta.content
                 if content:

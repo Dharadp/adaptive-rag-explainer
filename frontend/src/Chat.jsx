@@ -45,12 +45,24 @@ const Chat = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question, age_group: currentAge.key, domain }),
       });
+      console.log("Response status:", res.status);
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let firstChunk = true;
+      let receivedAnyContent = false;
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          if (!receivedAnyContent) {
+            setAnswer("Something went wrong and no response was received. Please try again.");
+          }
+          break;
+        }
+        if (!value) {
+          // stream produced a "not done" read with no value — treat as a hiccup, keep looping
+          continue;
+        }
+        receivedAnyContent = true;
         if(firstChunk) {
             setLoading(false);
             setStreaming(true);
