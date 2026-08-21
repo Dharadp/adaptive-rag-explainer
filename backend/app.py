@@ -99,8 +99,12 @@ def embed_texts(texts: list[str], batch_size: int = 100) -> list[list[float]]:
     all_embeddings = []
     for i in range(0, len(texts), batch_size):
         batch = texts[i:i + batch_size]
-        result = client.models.embed_content(model="gemini-embedding-001", contents=batch)
-        all_embeddings.extend([e.values for e in result.embeddings])
+        try:
+            result = client.models.embed_content(model="gemini-embedding-001", contents=batch)
+            all_embeddings.extend([e.values for e in result.embeddings])
+        except ClientError as e:
+            print(f"Embedding failed for batch {i}-{i+len(batch)}: {e}")
+            raise
     return all_embeddings
 
 # used to use sentence-transformers for embeddings, but now we use Gemini embeddings instead
