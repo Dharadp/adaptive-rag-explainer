@@ -45,7 +45,6 @@ const Chat = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question, age_group: currentAge.key, domain }),
       });
-      console.log("Response status:", res.status);
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let firstChunk = true;

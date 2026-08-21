@@ -39,7 +39,9 @@ AGE_PROFILES = {
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 KNOWLEDGE_DIR = os.path.join(BASE_DIR, "knowledge")
+MODEL_CACHE_DIR = os.path.join(BASE_DIR, "models")
 os.makedirs(KNOWLEDGE_DIR, exist_ok=True)
+os.makedirs(MODEL_CACHE_DIR, exist_ok=True)
 
 # ---------- Discover all domains in the knowledge/ folder ----------
 domain_cache = {}  # domain_name -> {"chunks": [...], "embeddings": [...]}
@@ -94,7 +96,7 @@ def load_chunks(filepath: str, chunk_size: int = 500) -> list[str]:
 def get_embedding_model():
     global _embedding_model
     if _embedding_model is None:
-        _embedding_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+        _embedding_model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2", cache_dir=MODEL_CACHE_DIR)
     return _embedding_model
 
 def embed_texts(texts: list[str]) -> list[list[float]]:
