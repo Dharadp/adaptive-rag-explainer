@@ -1,70 +1,61 @@
-# Getting Started with Create React App
+# Adaptive RAG Explainer — Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React (Vite) frontend for the Adaptive RAG Explainer app. Lets users pick a topic, a knowledge domain, and an age group, then streams back a tuned, grounded explanation from the backend.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- **Age selector** — a slider (Kid → Teen → Adult → Expert) that visibly tunes how the explanation is written
+- **Domain picker** — dynamically loaded from the backend's `/domains` endpoint, so new knowledge domains show up automatically with no frontend changes
+- **Streaming UI** — renders the model's response as it streams in, word by word, instead of a blocking spinner
+- **Markdown + math rendering** — formatted answers (bold, lists, headers) render properly, including LaTeX math notation via KaTeX
+- **Model transparency** — shows which model actually answered (e.g. Gemini vs. Groq fallback), so it's visible when a fallback kicked in
+- **Skeleton loading state** — shown only during the gap between submitting and the first streamed chunk arriving
 
-### `npm start`
+## Tech stack
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- React + Vite
+- `react-markdown` + `remark-math` + `rehype-katex` for formatted, math-aware rendering
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Setup
 
-### `npm test`
+```bash
+npm install
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Create a `.env` file in this folder:
+VITE_API_URL=http://localhost:8000
 
-### `npm run build`
+Run locally:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+npm run dev
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+App runs at `http://localhost:5173` by default.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Build for production
 
-### `npm run eject`
+```bash
+npm run build
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Outputs to `dist/`.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Deployment notes
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+- Deployed on Netlify as part of a monorepo
+- Netlify config lives in the **repo root** (`netlify.toml`), not this folder — Netlify requires it there to correctly resolve the `base` directory setting
+- Base directory: `frontend`
+- Build command: `npm run build`
+- Publish directory: `dist` (relative to the base directory)
+- Set `VITE_API_URL` as an environment variable in Netlify's dashboard, pointing to the deployed backend's URL (not `localhost`)
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Environment variables
 
-## Learn More
+| Variable | Required | Purpose |
+|---|---|---|
+| `VITE_API_URL` | Yes | Base URL of the backend API (local or deployed) |
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Notes on connecting to the backend
 
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+The backend must have this frontend's deployed URL listed in its CORS `allow_origins` — see [`backend/README.md`](../backend/README.md) for that configuration.
