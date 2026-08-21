@@ -10,7 +10,6 @@ from google import genai
 from google.genai.errors import ServerError, ClientError
 import numpy as np
 from groq import AsyncGroq
-from sentence_transformers import SentenceTransformer
 
 app = FastAPI()
 
@@ -25,10 +24,10 @@ app.add_middleware(
 load_dotenv()
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 groq_client = AsyncGroq(api_key=os.environ.get("GROQ_API_KEY"))
+_embedding_model = None
 
 # ---------- Streaming + model fallback ----------
 GEMINI_FALLBACKS = ["gemini-flash-latest", "gemini-flash-lite-latest", "gemini-2.5-flash"]
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 AGE_PROFILES = {
     "kid":    "a curious 8-year-old. Use simple words, short sentences, and fun analogies (animals, toys, games). Avoid jargon entirely.",
@@ -97,11 +96,11 @@ def load_chunks(filepath: str, chunk_size: int = 500) -> list[str]:
     return chunks
 
 def get_embedding_model():
-    global embedding_model
-    if embedding_model is None:
+    global _embedding_model
+    if _embedding_model is None:
         from sentence_transformers import SentenceTransformer
-        embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-    return embedding_model
+        _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+    return _embedding_model
 
 def embed_texts(texts: list[str]) -> list[list[float]]:
     model = get_embedding_model()
