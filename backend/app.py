@@ -95,17 +95,26 @@ def load_chunks(filepath: str, chunk_size: int = 500) -> list[str]:
         chunks.append(current.strip())
     return chunks
 
-def get_embedding_model():
-    global _embedding_model
-    if _embedding_model is None:
-        from sentence_transformers import SentenceTransformer
-        _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-    return _embedding_model
+def embed_texts(texts: list[str], batch_size: int = 100) -> list[list[float]]:
+    all_embeddings = []
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i + batch_size]
+        result = client.models.embed_content(model="gemini-embedding-001", contents=batch)
+        all_embeddings.extend([e.values for e in result.embeddings])
+    return all_embeddings
 
-def embed_texts(texts: list[str]) -> list[list[float]]:
-    model = get_embedding_model()
-    embeddings = model.encode(texts, convert_to_numpy=True)
-    return embeddings.tolist()
+# used to use sentence-transformers for embeddings, but now we use Gemini embeddings instead
+# def get_embedding_model():
+#     global _embedding_model
+#     if _embedding_model is None:
+#         from sentence_transformers import SentenceTransformer
+#         _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+#     return _embedding_model
+
+# def embed_texts(texts: list[str]) -> list[list[float]]:
+#     model = get_embedding_model()
+#     embeddings = model.encode(texts, convert_to_numpy=True)
+#     return embeddings.tolist()
 
 def cosine_similarity(a, b):
     print(f"Calculating cosine similarity between vectors of length {len(a)} and {len(b)}")
