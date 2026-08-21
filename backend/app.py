@@ -102,7 +102,7 @@ def embed_texts(texts: list[str], batch_size: int = 100) -> list[list[float]]:
         try:
             result = client.models.embed_content(model="gemini-embedding-001", contents=batch)
             all_embeddings.extend([e.values for e in result.embeddings])
-        except ClientError as e:
+        except (ServerError, ClientError) as e:
             print(f"Embedding failed for batch {i}-{i+len(batch)}: {e}")
             raise
     return all_embeddings
@@ -163,35 +163,48 @@ class QuestionRequest(BaseModel):
     domain: str = "general"  # which knowledge file to search
 
 async def generate_stream(req: QuestionRequest):
-    retrieved_chunks = retrieve_top_chunks(req.question, req.domain)
-    prompt = build_prompt(req.question, req.age_group, retrieved_chunks)
-    for model_name in GEMINI_FALLBACKS:
-        try:
-            response = await client.aio.models.generate_content_stream(
-                model=model_name,
-                contents=prompt
-            )
-            async for chunk in response:
-                if chunk.text:
-                    yield chunk.text
-            return  # success — stop here, don't try the next model
-        except (ServerError, ClientError) as e:
-            print(f"{model_name} failed: {e}")
-            continue
-    # All Gemini models failed — fall back to Groq
     try:
-        stream = await groq_client.chat.completions.create(
-            model="openai/gpt-oss-120b",
-            messages=[{"role": "user", "content": prompt}],
-            stream=True,
-        )
-        print(f"stream: {stream}")
-        async for chunk in stream:
-            content = chunk.choices[0].delta.content
-            if content:
-                yield content
-    except Exception:
-        yield "All models are currently unavailable. Please try again shortly."
+        retrieved_chunks = retrieve_top_chunks(req.question, req.domain)
+    except Exception as e:
+        print(f"Retrieval failed: {e}")
+        retrieved_chunks = []
+        raise e  # re-raise to let the client know retrieval failed
+
+    if not retrieved_chunks:
+        prompt = f"""Explain the topic below to {AGE_PROFILES.get(req.age_group, AGE_PROFILES['adult'])}
+
+Note: reference material could not be retrieved right now — answer using your own general knowledge instead.
+
+Topic: {req.question}"""
+    else:
+        prompt = build_prompt(req.question, req.age_group, retrieved_chunks)
+        for model_name in GEMINI_FALLBACKS:
+            try:
+                response = await client.aio.models.generate_content_stream(
+                    model=model_name,
+                    contents=prompt
+                )
+                async for chunk in response:
+                    if chunk.text:
+                        yield chunk.text
+                return  # success — stop here, don't try the next model
+            except (ServerError, ClientError) as e:
+                print(f"{model_name} failed: {e}")
+                continue
+        # All Gemini models failed — fall back to Groq
+        try:
+            stream = await groq_client.chat.completions.create(
+                model="openai/gpt-oss-120b",
+                messages=[{"role": "user", "content": prompt}],
+                stream=True,
+            )
+            print(f"stream: {stream}")
+            async for chunk in stream:
+                content = chunk.choices[0].delta.content
+                if content:
+                    yield content
+        except Exception:
+            yield "All models are currently unavailable. Please try again shortly."
 
 @app.post("/ask")
 async def ask_question(req: QuestionRequest):
