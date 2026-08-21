@@ -1,0 +1,15 @@
+# Python
+backend/__pycache__/
+backend/.env
+backend/*.embeddings.json
+backend/knowledge/*.embeddings.json
+backend/venv/
+
+# Node/React
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.production
+
+# General
+.DS_Store

@@ -1,0 +1,5 @@
+RAG stands for Retrieval-Augmented Generation. It combines a retrieval system with a language model.
+Instead of relying only on what the model learned during training, RAG fetches relevant information from an external source at query time.
+This helps reduce hallucinations and lets the model answer questions about private or recent data it was never trained on.
+Vector databases store embeddings, which are numerical representations of text, so similar meanings end up close together in vector space.
+Chunking means splitting large documents into smaller pieces so retrieval can find the most relevant section instead of an entire document.

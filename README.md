@@ -1,2 +1,1 @@
-# age-tuned-rag
-Full-stack RAG app that explains any topic from your own knowledge base, tuned to the asker's age with streaming responses and multi-provider LLM fallback.
+Full-stack Retrieval-Augmented Generation app that answers questions grounded in your own knowledge base — not just the model's training data. Pick a topic domain (e.g. Earth Science, RAG Concepts), choose an age group from Kid to Expert, and get a streamed, tailored explanation built from retrieved context rather than guesswork. Built with a React frontend and a FastAPI backend, with local embeddings, multi-model fallback (Gemini → Groq), and response streaming for a responsive UX.
