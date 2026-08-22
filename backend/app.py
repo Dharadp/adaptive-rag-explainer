@@ -11,7 +11,6 @@ from google import genai
 from google.genai.errors import ServerError, ClientError
 import numpy as np
 from groq import AsyncGroq
-from fastembed import TextEmbedding
 
 app = FastAPI()
 
