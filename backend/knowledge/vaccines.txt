@@ -1,0 +1,13 @@
+Vaccines work by training the immune system to recognize and fight a specific pathogen, such as a virus or bacterium, without causing the disease itself. They do this by introducing a harmless component or weakened version of the pathogen, prompting the body to build a defense in advance of any real exposure.
+
+When a vaccine is administered, the immune system responds by producing specialized proteins called antibodies, which are designed to recognize and bind to the specific pathogen the vaccine targets. The immune system also creates memory cells, which persist in the body long after the vaccine is given.
+
+Memory cells are the key to long-term protection. If the vaccinated person is later exposed to the actual pathogen, these memory cells recognize it quickly and trigger a fast, strong immune response, often preventing illness entirely or significantly reducing its severity.
+
+There are several types of vaccines, each using a different strategy to trigger this immune response. Inactivated vaccines use a killed version of the pathogen. Live-attenuated vaccines use a weakened, but still living, version. Subunit vaccines use just a piece of the pathogen, such as a specific protein. Messenger RNA (mRNA) vaccines, which became widely known during the COVID-19 pandemic, provide the body's own cells with instructions to temporarily produce a harmless piece of the pathogen, prompting the same protective immune response.
+
+Herd immunity occurs when a sufficient proportion of a population becomes immune to a disease, either through vaccination or prior infection, making it difficult for the disease to spread. This indirectly protects individuals who cannot be vaccinated themselves, such as newborns or people with certain medical conditions.
+
+Vaccines are rigorously tested for safety and effectiveness before approval, typically progressing through multiple phases of clinical trials involving progressively larger groups of people. Regulatory agencies continue to monitor vaccines for safety even after they are approved and in public use.
+
+Some of the most significant achievements in public health are directly tied to vaccination, including the global eradication of smallpox in 1980 and the near-elimination of diseases such as polio in most parts of the world.
