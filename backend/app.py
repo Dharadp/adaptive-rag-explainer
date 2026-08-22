@@ -1,6 +1,7 @@
 import os
 import json
 import hashlib
+import time
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,6 +30,7 @@ _embedding_model = None
 
 # ---------- Streaming + model fallback ----------
 GEMINI_FALLBACKS = ["gemini-flash-latest", "gemini-flash-lite-latest", "gemini-2.5-flash"]
+EMBEDDING_MODELS = ["gemini-embedding-001", "gemini-embedding-2"]
 
 AGE_PROFILES = {
     "kid":    "a curious 8-year-old. Use simple words, short sentences, and fun analogies (animals, toys, games). Avoid jargon entirely.",
@@ -93,15 +95,36 @@ def load_chunks(filepath: str, chunk_size: int = 500) -> list[str]:
         chunks.append(current.strip())
     return chunks
 
-def get_embedding_model():
-    global _embedding_model
-    if _embedding_model is None:
-        _embedding_model = TextEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2", cache_dir=MODEL_CACHE_DIR)
-    return _embedding_model
+def embed_texts(texts: list[str], batch_size: int = 100, max_retries: int = 2) -> list[list[float]]:
+    all_embeddings = []
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i + batch_size]
+        batch_embeddings = None
 
-def embed_texts(texts: list[str]) -> list[list[float]]:
-    model = get_embedding_model()
-    return [vec.tolist() for vec in model.embed(texts)]
+        for model_name in EMBEDDING_MODELS:
+            for attempt in range(max_retries):
+                try:
+                    result = client.models.embed_content(model=model_name, contents=batch)
+                    batch_embeddings = [e.values for e in result.embeddings]
+                    break
+                except ClientError as e:
+                    if "RESOURCE_EXHAUSTED" in str(e):
+                        if attempt < max_retries - 1:
+                            time.sleep(2 * (attempt + 1))
+                            continue
+                        else:
+                            print(f"{model_name} quota exhausted, trying next model")
+                            break
+                    else:
+                        raise
+            if batch_embeddings:
+                break
+
+        if not batch_embeddings:
+            raise RuntimeError("All embedding models exhausted their quota")
+
+        all_embeddings.extend(batch_embeddings)
+    return all_embeddings
 
 def cosine_similarity(a, b):
     a, b = np.array(a), np.array(b)
